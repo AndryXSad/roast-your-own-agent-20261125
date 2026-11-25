@@ -17,18 +17,33 @@ import sys
 LINE = "My agent called a tool to check whether it should call a tool. It decided to check again."
 
 
-def main() -> int:
-    if not 1 <= len(LINE) <= 140:
-        print(f"entry line is {len(LINE)} chars, gate needs 1-140", file=sys.stderr)
-        return 1
-    if not LINE.strip() or "\n" in LINE or "\r" in LINE:
-        print("entry line must be a single non-blank line", file=sys.stderr)
-        return 1
+def validate_line(line: str) -> str | None:
+    """Return an error message when the line breaks the 1-140 gate, else None."""
+    if not 1 <= len(line) <= 140:
+        return f"entry line is {len(line)} chars, gate needs 1-140"
+    if not line.strip() or "\n" in line or "\r" in line:
+        return "entry line must be a single non-blank line"
+    return None
+
+
+def resolve_output_path() -> str:
+    """Resolve $MAKEFUN_OUTPUT_DIR/entry.txt, creating the dir if needed."""
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
     os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, "entry.txt")
+    return os.path.join(out_dir, "entry.txt")
+
+
+def write_entry(path: str, line: str) -> None:
     with open(path, "w", encoding="utf-8", newline="") as f:
-        f.write(LINE)
+        f.write(line)
+
+
+def main() -> int:
+    error = validate_line(LINE)
+    if error is not None:
+        print(error, file=sys.stderr)
+        return 1
+    write_entry(resolve_output_path(), LINE)
     return 0
 
 
